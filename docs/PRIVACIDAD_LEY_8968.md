@@ -1,19 +1,18 @@
 # Privacidad y Ley 8968
 
-ParkSmart incorpora controles técnicos alineados con la Ley 8968 de Costa Rica y su Reglamento, pero este documento no sustituye una revisión jurídica profesional.
+La Ley 8968 protege la autodeterminación informativa y regula datos personales en bases automatizadas o manuales. Su artículo 5 exige información previa, expresa y precisa sobre existencia de la base, finalidades, destinatarios, carácter obligatorio/facultativo, tratamiento, consecuencias y derechos; además, el consentimiento debe constar por escrito, incluso electrónicamente.
 
-## Medidas incorporadas
-- Registro separado por finalidad: cliente y proveedor.
-- Consentimiento informado obligatorio (`aceptaPrivacidad`) antes de crear una cuenta.
-- Contraseñas almacenadas mediante hash; nunca se guarda la contraseña en texto plano.
-- Tokens de sesión firmados y con expiración.
-- Endpoints de proveedor protegidos por rol y asociación del proveedor autenticado.
-- Las reservas del proveedor se filtran únicamente a sus propios sectores/espacios.
-- El mapa público expone únicamente datos comerciales necesarios para localizar el servicio; no publica datos personales del cliente.
-- `.env` no debe contener secretos reales dentro de Git.
-- Se conserva una bitácora de operaciones para trazabilidad.
+## Controles implementados
+- El alta pública solo permite CLIENTE o PROVEEDOR.
+- El registro exige `aceptaPrivacidad=true`.
+- Se guarda versión del aviso, finalidad, fecha y usuario en `consentimiento_privacidad`.
+- Las contraseñas se almacenan como hash y los tokens tienen expiración.
+- El backend aplica autorización por rol para las funciones de proveedor.
+- Un proveedor solo puede crear espacios en sectores que le pertenecen y solo ve reservas de esos espacios.
+- El mapa público no expone teléfono, correo, identificación ni datos de clientes.
+- El `.env` se mantiene fuera del repositorio.
 
-## Derechos y operación
-La Ley 8968 protege la autodeterminación informativa y establece reglas para el tratamiento de datos personales. El sistema debe ofrecer mecanismos reales para acceso, rectificación y supresión cuando correspondan, además de información clara sobre finalidades, responsables, destinatarios y medios de contacto.
+## Pendientes antes de producción
+Definir responsable de la base, canal para acceso/rectificación/supresión/revocación, política de conservación, gestión de incidentes, contratos con terceros y análisis de obligaciones ante PRODHAB. El Reglamento también exige medios simplificados para que los titulares ejerzan sus derechos.
 
-Antes de pasar a producción se recomienda definir formalmente: responsable de la base, encargado(s), política de conservación, procedimiento de atención de derechos ARCO, gestión de incidentes, contratos con terceros y si alguna base requiere inscripción ante PRODHAB según el caso concreto.
+Este documento es una implementación técnica/académica y no sustituye asesoría legal.

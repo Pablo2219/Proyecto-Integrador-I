@@ -2,48 +2,60 @@
 
 ## 1. Requisitos
 - Docker Desktop funcionando.
-- Python 3.11+ para levantar únicamente el servidor estático del frontend.
-- Navegador moderno con geolocalización habilitada.
+- Python 3.11+ para levantar el servidor estático del frontend.
+- Navegador moderno con JavaScript y geolocalización.
 
 ## 2. Configurar `.env`
-En PowerShell:
 ```powershell
 Copy-Item .env.example .env
 notepad .env
 ```
-En desarrollo local podés dejar `MYSQL_ROOT_PASSWORD=root`, pero cambia `SECRET_KEY`. Si usás un MySQL externo, ajustá `DATABASE_URL`.
+En desarrollo dejá `MYSQL_ROOT_PASSWORD=root` si no necesitás otra clave. **Cambiá `SECRET_KEY`** por una cadena aleatoria larga. El `.gitignore` ya evita subir `.env`.
 
-## 3. Arranque limpio
+## 3. Arranque limpio recomendado
+La imagen oficial de MySQL ejecuta los `.sql` de `/docker-entrypoint-initdb.d` en orden al inicializar un volumen nuevo. citeturn2search0
 ```powershell
 docker compose down -v
 docker compose up --build
 ```
-Esperá a que `parksmart_db` esté `healthy` y `parksmart_api` esté arriba.
+No cierres esa terminal. Esperá a que aparezcan los contenedores `parksmart_db` y `parksmart_api`.
 
 ## 4. Frontend
-En otra terminal, desde la raíz:
+En otra PowerShell, desde la raíz:
 ```powershell
 python -m http.server 5500 --directory frontend
 ```
 Abrí `http://127.0.0.1:5500`.
 
-## 5. Probar registro
-Pulsa **Crear una cuenta**. Elegí Cliente o Proveedor. El proveedor debe indicar nombre comercial. El checkbox de privacidad es obligatorio.
+## 5. Crear cliente o proveedor
+En login aparece **Crear una cuenta**. Los roles públicos son únicamente Cliente y Proveedor. El consentimiento de privacidad es obligatorio.
 
-## 6. Probar proveedor
-Iniciá sesión con la cuenta recién creada. En el panel proveedor:
-- `+ Sector` → tocá una posición del mapa → nombre/precio → guardar.
-- `+ Espacio` → tocá una posición → seleccioná sector/código/tipo → guardar.
-- `Mis reservas` muestra solo reservas realizadas sobre espacios del proveedor autenticado.
+## 6. Proveedor
+Después de crear una cuenta de proveedor:
+1. Entrá con sus credenciales.
+2. Abrí **Panel proveedor**.
+3. `+ Sector` → tocá el mapa → nombre + precio/hora → guardar.
+4. `+ Espacio` → tocá el mapa → sector + código + tipo → guardar.
+5. `Mis reservas` muestra las reservas de los espacios pertenecientes a ese proveedor.
 
-## 7. Probar cliente
-Registrá otra cuenta como cliente, agregá su vehículo desde el flujo existente y reservá un espacio. El proveedor verá esa reserva únicamente si pertenece a uno de sus espacios.
+Las coordenadas se almacenan en la base como latitud/longitud y el backend verifica la propiedad del sector antes de permitir agregar espacios.
+
+## 7. Cliente
+Creá una cuenta cliente, agregá su vehículo usando el flujo existente y reservá. El cliente consulta sus reservas; el proveedor solo consulta las reservas de sus propios espacios.
 
 ## 8. Swagger
-`http://127.0.0.1:8000/docs`. El endpoint público de registro es `POST /auth/registro`; mapa público `GET /proveedores/mapa`; creación de sector/espacio y reservas de proveedor requieren JWT de proveedor.
+- API: `http://127.0.0.1:8000`
+- Swagger: `http://127.0.0.1:8000/docs`
+- Registro: `POST /auth/registro`
+- Mapa: `GET /proveedores/mapa`
+- Sectores: `POST /proveedores/sectores` (proveedor autenticado)
+- Espacios: `POST /proveedores/espacios` (proveedor autenticado)
+- Reservas proveedor: `GET /proveedores/reservas` (proveedor autenticado)
 
-## 9. Problemas frecuentes
-- **Access denied MySQL:** verificá `MYSQL_ROOT_PASSWORD` y, si cambiaste credenciales después de crear el volumen, ejecutá `docker compose down -v` solo en desarrollo.
-- **Puerto 3307 ocupado:** cambiá el puerto externo de `3307:3306` y `DATABASE_URL` si ejecutás API fuera de Docker.
-- **Mapa vacío:** primero registrá un proveedor y publica un sector/espacio; Leaflet necesita internet para los tiles.
-- **Cambios de tablas no aparecen:** recreá el volumen en desarrollo para ejecutar la migración inicial.
+## 9. Si ya tenías una base creada
+Los scripts de inicialización de MySQL no vuelven a ejecutarse sobre un volumen existente. En desarrollo académico, hacé respaldo si necesitás los datos y luego:
+```powershell
+docker compose down -v
+docker compose up --build
+```
+En producción nunca borres el volumen: respaldá y ejecutá la migración de forma controlada.
