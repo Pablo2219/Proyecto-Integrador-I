@@ -2,11 +2,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "mysql+pymysql://root:Caguirret@localhost:3306/ParkSmart"
+    DATABASE_URL: str = "mysql+pymysql://root:root@localhost:3307/parksmart"
     SECRET_KEY: str = "parksmart-cambie-esta-clave-en-produccion-2026"
     ACCESS_TOKEN_MINUTES: int = 480
     RESET_TOKEN_MINUTES: int = 15
     AUTH_DEBUG_RESET_TOKEN: bool = True
+
+    # Cuenta administrativa de desarrollo. Cambiar estos valores fuera del entorno académico.
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_EMAIL: str = "admin@parksmart.com"
+    ADMIN_PASSWORD: str = "Admin123*"
 
     NOTIFICATION_MODE: str = "SIMULATION"
     DEFAULT_PHONE_COUNTRY_CODE: str = "+506"
