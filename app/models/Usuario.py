@@ -4,6 +4,8 @@ from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, String, func
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database.Base import Base
+from app.models.Proveedor import Proveedor  # noqa: F401
+
 
 class Usuario(Base):
     __tablename__ = "Usuario"
