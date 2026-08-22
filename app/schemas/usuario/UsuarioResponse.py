@@ -1,13 +1,11 @@
 from datetime import datetime
 from typing import Optional
-
 from pydantic import BaseModel
-
-
 class UsuarioResponse(BaseModel):
     idUsuario: int
     idRol: int
     idCliente: Optional[int]
+    idProveedor: Optional[int] = None
     nombreUsuario: str
     correoElectronico: str
     rol: str

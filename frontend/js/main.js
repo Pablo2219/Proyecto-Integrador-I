@@ -1,11 +1,6 @@
-document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("btnDashboard").addEventListener("click", cargarDashboard);
-    document.getElementById("btnClientes").addEventListener("click", cargarClientes);
-    document.getElementById("btnVehiculos").addEventListener("click", cargarVehiculos);
-    document.getElementById("btnReservas").addEventListener("click", cargarReservas);
-    document.getElementById("btnPagos").addEventListener("click", cargarPagos);
-    document.getElementById("btnDeudas").addEventListener("click", cargarDeudas);
-    document.getElementById("btnNotificaciones").addEventListener("click", cargarNotificaciones);
-
-    cargarDashboard();
+document.addEventListener('DOMContentLoaded',()=>{
+ const map={btnDashboard:'cargarDashboard',btnClientes:'cargarClientes',btnVehiculos:'cargarVehiculos',btnReservas:'cargarReservas',btnPagos:'cargarPagos',btnDeudas:'cargarDeudas',btnNotificaciones:'cargarNotificaciones'};
+ Object.entries(map).forEach(([id,fn])=>document.getElementById(id)?.addEventListener('click',()=>window[fn]?.()));
+ window.cargarDashboard?.();
+ const s=document.createElement('script');s.src='js/roles.js';s.onload=()=>window.prepararRegistroCuenta?.();document.body.appendChild(s);
 });

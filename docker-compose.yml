@@ -5,19 +5,19 @@ services:
     restart: always
     command: --lower_case_table_names=1
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: parksmart
     ports:
       - "3307:3306"
     volumes:
       - parksmart_mysql_data:/var/lib/mysql
-      - ./database/parksmart_db.sql:/docker-entrypoint-initdb.d/01_parksmart_db.sql
+      - ./database/parksmart_db.sql:/docker-entrypoint-initdb.d/01_parksmart_db.sql:ro
+      - ./database/migrations:/docker-entrypoint-initdb.d/02_migrations:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD","mysqladmin","ping","-h","localhost","-uroot","-p$${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s
       retries: 10
-
   api:
     build: .
     container_name: parksmart_api
@@ -26,8 +26,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: mysql+pymysql://root:root@db:3306/parksmart
-      SECRET_KEY: ${SECRET_KEY:-parksmart-cambie-esta-clave-en-produccion-2026}
+      DATABASE_URL: mysql+pymysql://root:$${MYSQL_ROOT_PASSWORD:-root}@db:3306/parksmart
+      SECRET_KEY: ${SECRET_KEY:-cambie-esta-clave-en-produccion}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-480}
       RESET_TOKEN_MINUTES: ${RESET_TOKEN_MINUTES:-15}
       AUTH_DEBUG_RESET_TOKEN: ${AUTH_DEBUG_RESET_TOKEN:-true}
@@ -46,6 +46,5 @@ services:
       TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
     ports:
       - "8000:8000"
-
 volumes:
   parksmart_mysql_data:
