@@ -1,4 +1,8 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field
 class UsuarioCreate(BaseModel):
-    nombreUsuario:str=Field(...,min_length=4,max_length=50); correoElectronico:EmailStr; contrasena:str=Field(...,min_length=8,max_length=72); rol:Literal['ADMINISTRADOR','CLIENTE','PROVEEDOR']; idCliente:Optional[int]=Field(None,gt=0)
+    nombreUsuario: str = Field(..., min_length=4, max_length=50)
+    correoElectronico: EmailStr
+    contrasena: str = Field(..., min_length=8, max_length=72)
+    rol: Literal['ADMINISTRADOR','CLIENTE']
+    idCliente: Optional[int] = Field(None, gt=0)
