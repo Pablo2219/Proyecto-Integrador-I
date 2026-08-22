@@ -1,13 +1,8 @@
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from app.config.Security import hash_password
 from app.config.Settings import settings
-
-
-ADMIN_USERNAME = settings.ADMIN_USERNAME
-ADMIN_EMAIL = settings.ADMIN_EMAIL
-ADMIN_PASSWORD = settings.ADMIN_PASSWORD
 
 
 def _column_exists(connection, table: str, column: str) -> bool:
@@ -43,39 +38,21 @@ def _constraint_exists(connection, table: str, constraint: str) -> bool:
 
 
 def ensure_schema(engine: Engine) -> None:
-    """Makes the authentication/provider schema safe to start on an existing dev DB.
-
-    The docker MySQL init scripts only execute on a new volume. This repair keeps an
-    existing development volume compatible with the current authentication model.
-    """
+    """Keep an existing development database compatible with the current app."""
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                """
-                INSERT INTO Rol (nombreRol, descripcion, estado)
-                SELECT 'ADMINISTRADOR', 'Administrador del sistema ParkSmart.', 'ACTIVO'
-                WHERE NOT EXISTS (SELECT 1 FROM Rol WHERE nombreRol = 'ADMINISTRADOR')
-                """
+        for nombre, descripcion in (
+            ("ADMINISTRADOR", "Administrador del sistema ParkSmart."),
+            ("CLIENTE", "Cliente que reserva espacios de parqueo."),
+            ("PROVEEDOR", "Proveedor que publica sectores y espacios de parqueo."),
+        ):
+            connection.execute(
+                text(
+                    "INSERT INTO Rol (nombreRol, descripcion, estado) "
+                    "SELECT :nombre, :descripcion, 'ACTIVO' "
+                    "WHERE NOT EXISTS (SELECT 1 FROM Rol WHERE nombreRol=:nombre)"
+                ),
+                {"nombre": nombre, "descripcion": descripcion},
             )
-        )
-        connection.execute(
-            text(
-                """
-                INSERT INTO Rol (nombreRol, descripcion, estado)
-                SELECT 'CLIENTE', 'Cliente que reserva espacios de parqueo.', 'ACTIVO'
-                WHERE NOT EXISTS (SELECT 1 FROM Rol WHERE nombreRol = 'CLIENTE')
-                """
-            )
-        )
-        connection.execute(
-            text(
-                """
-                INSERT INTO Rol (nombreRol, descripcion, estado)
-                SELECT 'PROVEEDOR', 'Proveedor que publica sectores y espacios de parqueo.', 'ACTIVO'
-                WHERE NOT EXISTS (SELECT 1 FROM Rol WHERE nombreRol = 'PROVEEDOR')
-                """
-            )
-        )
 
         connection.execute(
             text(
@@ -154,24 +131,32 @@ def ensure_schema(engine: Engine) -> None:
                     aceptado TINYINT(1) NOT NULL DEFAULT 1,
                     fechaAceptacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (idConsentimiento),
-                    KEY ix_consentimiento_usuario (idUsuario),
-                    CONSTRAINT fk_consentimiento_usuario FOREIGN KEY (idUsuario)
-                        REFERENCES Usuario(idUsuario) ON DELETE RESTRICT ON UPDATE CASCADE
+                    KEY ix_consentimiento_usuario (idUsuario)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """
             )
         )
+        if not _constraint_exists(connection, "consentimiento_privacidad", "fk_consentimiento_usuario"):
+            try:
+                connection.execute(
+                    text(
+                        "ALTER TABLE consentimiento_privacidad ADD CONSTRAINT fk_consentimiento_usuario "
+                        "FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario) "
+                        "ON DELETE RESTRICT ON UPDATE CASCADE"
+                    )
+                )
+            except Exception:
+                pass
 
         admin_role = connection.execute(
             text("SELECT idRol FROM Rol WHERE nombreRol='ADMINISTRADOR' LIMIT 1")
         ).scalar_one()
-
         existing_admin = connection.execute(
             text(
                 "SELECT idUsuario FROM Usuario "
                 "WHERE nombreUsuario=:username OR correoElectronico=:email LIMIT 1"
             ),
-            {"username": ADMIN_USERNAME, "email": ADMIN_EMAIL.lower()},
+            {"username": settings.ADMIN_USERNAME, "email": settings.ADMIN_EMAIL.lower()},
         ).scalar()
 
         if existing_admin is None:
@@ -183,23 +168,29 @@ def ensure_schema(engine: Engine) -> None:
                 ),
                 {
                     "rol": admin_role,
-                    "username": ADMIN_USERNAME,
-                    "email": ADMIN_EMAIL.lower(),
-                    "password": hash_password(ADMIN_PASSWORD),
+                    "username": settings.ADMIN_USERNAME,
+                    "email": settings.ADMIN_EMAIL.lower(),
+                    "password": hash_password(settings.ADMIN_PASSWORD),
                 },
             )
         else:
+            values = {
+                "rol": admin_role,
+                "id": existing_admin,
+                "estado": "ACTIVO",
+            }
+            password_sql = ", contrasenaHash=:password" if settings.ADMIN_RESET_PASSWORD_ON_STARTUP else ""
+            if settings.ADMIN_RESET_PASSWORD_ON_STARTUP:
+                values["password"] = hash_password(settings.ADMIN_PASSWORD)
             connection.execute(
                 text(
-                    "UPDATE Usuario SET idRol=:rol, estado='ACTIVO' "
-                    "WHERE idUsuario=:id"
+                    "UPDATE Usuario SET idRol=:rol, estado=:estado" + password_sql + " WHERE idUsuario=:id"
                 ),
-                {"rol": admin_role, "id": existing_admin},
+                values,
             )
 
 
 def startup_check(engine: Engine) -> None:
-    """Runs the repair once during API startup and raises a clear error if DB is unavailable."""
     try:
         ensure_schema(engine)
     except Exception as error:
