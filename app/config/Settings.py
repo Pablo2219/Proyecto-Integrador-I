@@ -8,10 +8,11 @@ class Settings(BaseSettings):
     RESET_TOKEN_MINUTES: int = 15
     AUTH_DEBUG_RESET_TOKEN: bool = True
 
-    # Cuenta administrativa de desarrollo. Cambiar estos valores fuera del entorno académico.
+    # Cuenta administrativa para el entorno académico. Cambiar fuera de desarrollo.
     ADMIN_USERNAME: str = "admin"
     ADMIN_EMAIL: str = "admin@parksmart.com"
     ADMIN_PASSWORD: str = "Admin123*"
+    ADMIN_RESET_PASSWORD_ON_STARTUP: bool = True
 
     NOTIFICATION_MODE: str = "SIMULATION"
     DEFAULT_PHONE_COUNTRY_CODE: str = "+506"
